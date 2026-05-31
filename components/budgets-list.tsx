@@ -7,10 +7,9 @@ import { Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 
 interface BudgetsListProps {
   budgets: any[]
-  categories: any[]
 }
 
-export function BudgetsList({ budgets, categories }: BudgetsListProps) {
+export function BudgetsList({ budgets }: BudgetsListProps) {
   const [expandedBudgetId, setExpandedBudgetId] = useState<string | null>(null)
   const [budgetDetails, setBudgetDetails] = useState<Record<string, any>>({})
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)

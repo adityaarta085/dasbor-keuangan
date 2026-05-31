@@ -1,16 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { DollarSign, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 
 interface Transaction {
   id: string
   category: string
-  categoryColor?: string
-  type: 'income' | 'expense'
+  categoryColor?: string | null
+  type: string
   amount: string
-  description?: string
+  description?: string | null
   transactionDate: string
 }
 
@@ -149,7 +149,7 @@ export function Dashboard({ transactions }: DashboardProps) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => `IDR ${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`} />
+              <Tooltip formatter={(value) => `IDR ${Number(value ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })}`} />
             </PieChart>
           </ResponsiveContainer>
         </div>
