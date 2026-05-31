@@ -6,7 +6,7 @@ import { Users, Plus, Mail } from 'lucide-react'
 interface FamilyManagementProps {
   user: {
     id: string
-    name?: string
+    name?: string | null
     email: string
   }
 }

@@ -10,6 +10,12 @@ async function getUserId() {
   return 'demo-user-id'
 }
 
+function optionalDecimal(value?: string) {
+  const trimmedValue = value?.trim()
+
+  return trimmedValue ? trimmedValue : null
+}
+
 export async function getBudgets() {
   const userId = await getUserId()
   
@@ -71,8 +77,8 @@ export async function createBudget(data: {
     await db.insert(budgetAllocations).values({
       budgetId: budget.id,
       categoryId: allocation.categoryId,
-      allocationPercentage: allocation.allocationPercentage ? parseFloat(allocation.allocationPercentage) : null,
-      allocationAmount: allocation.allocationAmount ? parseFloat(allocation.allocationAmount) : null,
+      allocationPercentage: optionalDecimal(allocation.allocationPercentage),
+      allocationAmount: optionalDecimal(allocation.allocationAmount),
     })
   }
 
@@ -112,8 +118,8 @@ export async function updateBudget(id: string, data: {
       await db.insert(budgetAllocations).values({
         budgetId: id,
         categoryId: allocation.categoryId,
-        allocationPercentage: allocation.allocationPercentage ? parseFloat(allocation.allocationPercentage) : null,
-        allocationAmount: allocation.allocationAmount ? parseFloat(allocation.allocationAmount) : null,
+        allocationPercentage: optionalDecimal(allocation.allocationPercentage),
+        allocationAmount: optionalDecimal(allocation.allocationAmount),
       })
     }
   }

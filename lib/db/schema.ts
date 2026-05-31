@@ -1,5 +1,4 @@
-import { pgTable, text, timestamp, varchar, decimal, date, boolean, jsonb, unique, index, primaryKey } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
+import { pgTable, text, timestamp, varchar, decimal, date, boolean, jsonb, unique, index } from 'drizzle-orm/pg-core'
 
 // Better Auth tables
 export const user = pgTable('user', {
@@ -50,7 +49,7 @@ export const verification = pgTable('verification', {
 export const categories = pgTable(
   'categories',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     userId: text('user_id').notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     description: text('description'),
@@ -68,7 +67,7 @@ export const categories = pgTable(
 export const transactions = pgTable(
   'transactions',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     userId: text('user_id').notNull(),
     categoryId: text('category_id').notNull(),
     type: varchar('type', { length: 20 }).notNull(),
@@ -88,7 +87,7 @@ export const transactions = pgTable(
 export const budgets = pgTable(
   'budgets',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     userId: text('user_id').notNull(),
     month: varchar('month', { length: 7 }).notNull(),
     totalBudget: decimal('total_budget', { precision: 15, scale: 2 }).notNull(),
@@ -104,7 +103,7 @@ export const budgets = pgTable(
 export const budgetAllocations = pgTable(
   'budget_allocations',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     budgetId: text('budget_id').notNull(),
     categoryId: text('category_id').notNull(),
     allocationAmount: decimal('allocation_amount', { precision: 15, scale: 2 }),
@@ -121,7 +120,7 @@ export const budgetAllocations = pgTable(
 export const familyGroups = pgTable(
   'family_groups',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     name: varchar('name', { length: 255 }).notNull(),
     ownerId: text('owner_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -135,7 +134,7 @@ export const familyGroups = pgTable(
 export const familyMembers = pgTable(
   'family_members',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     familyGroupId: text('family_group_id').notNull(),
     userId: text('user_id').notNull(),
     role: varchar('role', { length: 50 }).notNull().default('member'),
@@ -151,7 +150,7 @@ export const familyMembers = pgTable(
 export const sharedTransactions = pgTable(
   'shared_transactions',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     familyGroupId: text('family_group_id').notNull(),
     categoryId: text('category_id').notNull(),
     type: varchar('type', { length: 20 }).notNull(),
@@ -171,7 +170,7 @@ export const sharedTransactions = pgTable(
 export const sharedBudgets = pgTable(
   'shared_budgets',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     familyGroupId: text('family_group_id').notNull(),
     month: varchar('month', { length: 7 }).notNull(),
     totalBudget: decimal('total_budget', { precision: 15, scale: 2 }).notNull(),
@@ -187,7 +186,7 @@ export const sharedBudgets = pgTable(
 export const sharedBudgetAllocations = pgTable(
   'shared_budget_allocations',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     sharedBudgetId: text('shared_budget_id').notNull(),
     categoryId: text('category_id').notNull(),
     allocationAmount: decimal('allocation_amount', { precision: 15, scale: 2 }),
@@ -204,7 +203,7 @@ export const sharedBudgetAllocations = pgTable(
 export const auditLogs = pgTable(
   'audit_logs',
   {
-    id: text('id').primaryKey().default(() => Math.random().toString(36).substring(2, 15)),
+    id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
     userId: text('user_id').notNull(),
     action: varchar('action', { length: 100 }).notNull(),
     entityType: varchar('entity_type', { length: 50 }),
