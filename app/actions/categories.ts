@@ -4,10 +4,14 @@ import { db } from '@/lib/db'
 import { categories } from '@/lib/db/schema'
 import { and, eq, desc } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { getSession } from '@/lib/auth'
 
-// TODO: Implement proper session validation from cookies
 async function getUserId() {
-  return 'demo-user-id'
+  const session = await getSession()
+  if (!session?.user) {
+    throw new Error('Unauthorized')
+  }
+  return session.user.id
 }
 
 export async function getCategories() {

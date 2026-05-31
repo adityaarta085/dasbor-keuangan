@@ -24,14 +24,19 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       if (mode === 'sign-up') {
         await signUp(email, password, name)
+        // Wait a bit for cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 500))
       } else {
         await signIn(email, password)
+        // Wait a bit for cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      router.push('/')
+      // Use replace to navigate to dashboard
+      router.replace('/')
+      // Refresh to revalidate session on server
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
       setLoading(false)
     }
   }
