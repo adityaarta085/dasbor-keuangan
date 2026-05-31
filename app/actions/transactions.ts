@@ -13,7 +13,16 @@ async function getUserId() {
 export async function getTransactions(startDate?: string, endDate?: string) {
   const userId = await getUserId()
   
-  let query = db
+  const conditions: any[] = [eq(transactions.userId, userId)]
+  
+  if (startDate) {
+    conditions.push(gte(transactions.transactionDate, startDate))
+  }
+  if (endDate) {
+    conditions.push(lte(transactions.transactionDate, endDate))
+  }
+
+  return db
     .select({
       id: transactions.id,
       category: categories.name,
@@ -27,16 +36,8 @@ export async function getTransactions(startDate?: string, endDate?: string) {
     })
     .from(transactions)
     .innerJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(eq(transactions.userId, userId))
-
-  if (startDate) {
-    query = query.where(gte(transactions.transactionDate, startDate))
-  }
-  if (endDate) {
-    query = query.where(lte(transactions.transactionDate, endDate))
-  }
-
-  return query.orderBy(desc(transactions.transactionDate))
+    .where(and(...conditions))
+    .orderBy(desc(transactions.transactionDate))
 }
 
 export async function createTransaction(data: {
