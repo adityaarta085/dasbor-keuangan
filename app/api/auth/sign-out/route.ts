@@ -1,6 +1,6 @@
 import { signOutUser } from '@/lib/auth'
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     await signOutUser()
     return Response.json({ message: 'Signed out successfully' })

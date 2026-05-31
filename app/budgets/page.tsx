@@ -33,7 +33,7 @@ export default async function BudgetsPage() {
 
           {/* Budgets List */}
           <div className="lg:col-span-2">
-            <BudgetsList budgets={budgets} categories={categories} />
+            <BudgetsList budgets={budgets} />
           </div>
         </div>
       </main>
