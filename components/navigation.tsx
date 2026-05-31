@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, LogOut, BarChart3, Wallet, Target, Users } from 'lucide-react'
-import { authClient } from '@/lib/auth-client'
+import { signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 
 interface NavigationProps {
@@ -19,7 +19,7 @@ export function Navigation({ user }: NavigationProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
-    await authClient.signOut()
+    await signOut()
     router.push('/sign-in')
     router.refresh()
   }

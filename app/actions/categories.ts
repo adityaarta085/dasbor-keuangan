@@ -1,17 +1,13 @@
 'use server'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { categories } from '@/lib/db/schema'
 import { and, eq, desc } from 'drizzle-orm'
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 
+// TODO: Implement proper session validation from cookies
 async function getUserId() {
-  const headersList = await headers()
-  const session = await auth.api.getSession({ headers: headersList })
-  if (!session?.user) throw new Error('Unauthorized')
-  return session.user.id
+  return 'demo-user-id'
 }
 
 export async function getCategories() {

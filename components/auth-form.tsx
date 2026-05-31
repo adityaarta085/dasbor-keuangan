@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth-client'
+import { signUp, signIn } from '@/lib/auth-client'
 
 interface AuthFormProps {
   mode: 'sign-in' | 'sign-up'
@@ -23,16 +23,9 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'sign-up') {
-        await authClient.signUp.email({
-          email,
-          password,
-          name,
-        })
+        await signUp(email, password, name)
       } else {
-        await authClient.signIn.email({
-          email,
-          password,
-        })
+        await signIn(email, password)
       }
       router.push('/')
       router.refresh()
