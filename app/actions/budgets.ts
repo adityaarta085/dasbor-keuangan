@@ -71,8 +71,8 @@ export async function createBudget(data: {
     await db.insert(budgetAllocations).values({
       budgetId: budget.id,
       categoryId: allocation.categoryId,
-      allocationPercentage: allocation.allocationPercentage ? parseFloat(allocation.allocationPercentage) : null,
-      allocationAmount: allocation.allocationAmount ? parseFloat(allocation.allocationAmount) : null,
+      allocationPercentage: allocation.allocationPercentage ? allocation.allocationPercentage.toString() : null,
+      allocationAmount: allocation.allocationAmount ? allocation.allocationAmount.toString() : null,
     })
   }
 
@@ -112,8 +112,8 @@ export async function updateBudget(id: string, data: {
       await db.insert(budgetAllocations).values({
         budgetId: id,
         categoryId: allocation.categoryId,
-        allocationPercentage: allocation.allocationPercentage ? parseFloat(allocation.allocationPercentage) : null,
-        allocationAmount: allocation.allocationAmount ? parseFloat(allocation.allocationAmount) : null,
+        allocationPercentage: allocation.allocationPercentage ? allocation.allocationPercentage.toString() : null,
+        allocationAmount: allocation.allocationAmount ? allocation.allocationAmount.toString() : null,
       })
     }
   }
