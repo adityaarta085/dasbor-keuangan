@@ -40,40 +40,49 @@ export interface Session {
   expiresAt: number
 }
 
+function generateUUID(): string {
+  // Generate a version 4 UUID
+  const array = new Uint8Array(16)
+  crypto.getRandomValues(array)
+  array[6] = (array[6] & 0x0f) | 0x40 // Set version to 4
+  array[8] = (array[8] & 0x3f) | 0x80 // Set variant to RFC 4122
+  
+  const hex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('')
+  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-')
+}
+
 export async function registerUser(email: string, password: string, name: string): Promise<User> {
   const passwordHash = await hashPassword(password)
+  const normalizedEmail = email.toLowerCase()
   
   const existingUser = await db
     .select()
     .from(user)
-    .where(eq(user.email, email.toLowerCase()))
+    .where(eq(user.email, normalizedEmail))
     .limit(1)
 
   if (existingUser.length > 0) {
     throw new Error('Email already registered')
   }
 
+  const userId = generateUUID()
   const newUser = {
-    id: crypto.getRandomValues(new Uint8Array(16)).reduce((a, b) => a + b.toString(16).padStart(2, '0'), ''),
-    email: email.toLowerCase(),
+    id: userId,
+    email: normalizedEmail,
     name: name || null,
     image: null,
     emailVerified: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   }
 
   await db.insert(user).values(newUser)
 
   await db.insert(account).values({
-    id: crypto.getRandomValues(new Uint8Array(16)).reduce((a, b) => a + b.toString(16).padStart(2, '0'), ''),
-    userId: newUser.id,
+    id: generateUUID(),
+    userId: userId,
     type: 'email',
     provider: 'credential',
-    providerAccountId: email.toLowerCase(),
+    providerAccountId: normalizedEmail,
     password: passwordHash,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   })
 
   return {
