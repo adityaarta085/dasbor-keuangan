@@ -1,6 +1,14 @@
 'use client'
 
-export async function signUp(email: string, password: string, name: string) {
+export interface User {
+  id: string
+  email: string
+  name: string | null
+  image: string | null
+  emailVerified: boolean
+}
+
+export async function signUp(email: string, password: string, name: string): Promise<User> {
   const response = await fetch('/api/auth/sign-up', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -12,10 +20,15 @@ export async function signUp(email: string, password: string, name: string) {
     throw new Error(error.message || 'Failed to sign up')
   }
   
-  return response.json()
+  const user = await response.json()
+  // Store user in localStorage for client-side access
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('user', JSON.stringify(user))
+  }
+  return user
 }
 
-export async function signIn(email: string, password: string) {
+export async function signIn(email: string, password: string): Promise<User> {
   const response = await fetch('/api/auth/sign-in', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -27,10 +40,15 @@ export async function signIn(email: string, password: string) {
     throw new Error(error.message || 'Failed to sign in')
   }
   
-  return response.json()
+  const user = await response.json()
+  // Store user in localStorage for client-side access
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('user', JSON.stringify(user))
+  }
+  return user
 }
 
-export async function signOut() {
+export async function signOut(): Promise<void> {
   const response = await fetch('/api/auth/sign-out', {
     method: 'POST',
   })
@@ -38,16 +56,22 @@ export async function signOut() {
   if (!response.ok) {
     throw new Error('Failed to sign out')
   }
+  
+  // Clear user from localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('user')
+  }
 }
 
-export async function getUser() {
-  const response = await fetch('/api/auth/user', {
-    method: 'GET',
-  })
+export function getLocalUser(): User | null {
+  if (typeof window === 'undefined') return null
   
-  if (!response.ok) {
+  const userJson = localStorage.getItem('user')
+  if (!userJson) return null
+  
+  try {
+    return JSON.parse(userJson)
+  } catch (e) {
     return null
   }
-  
-  return response.json()
 }

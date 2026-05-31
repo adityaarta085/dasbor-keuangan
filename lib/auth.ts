@@ -1,7 +1,9 @@
 import { cookies } from 'next/headers'
-import { db } from './db'
-import { account, user } from './db/schema'
-import { eq } from 'drizzle-orm'
+import { Pool } from 'pg'
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
 
 const HASH_ALGORITHM = 'SHA-256'
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -23,10 +25,6 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return computedHash === hash
 }
 
-function generateToken(): string {
-  return crypto.getRandomValues(new Uint8Array(32)).reduce((a, b) => a + b.toString(16).padStart(2, '0'), '')
-}
-
 export interface User {
   id: string
   email: string
@@ -40,124 +38,122 @@ export interface Session {
   expiresAt: number
 }
 
-function generateUUID(): string {
-  // Generate a version 4 UUID
-  const array = new Uint8Array(16)
-  crypto.getRandomValues(array)
-  array[6] = (array[6] & 0x0f) | 0x40 // Set version to 4
-  array[8] = (array[8] & 0x3f) | 0x80 // Set variant to RFC 4122
-  
-  const hex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('')
-  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-')
-}
-
 export async function registerUser(email: string, password: string, name: string): Promise<User> {
-  const passwordHash = await hashPassword(password)
-  const normalizedEmail = email.toLowerCase()
-  
-  const existingUser = await db
-    .select()
-    .from(user)
-    .where(eq(user.email, normalizedEmail))
-    .limit(1)
+  const client = await pool.connect()
+  try {
+    const existingResult = await client.query(
+      'SELECT id FROM neon_auth."user" WHERE email = $1',
+      [email.toLowerCase()]
+    )
 
-  if (existingUser.length > 0) {
-    throw new Error('Email already registered')
-  }
+    if (existingResult.rows.length > 0) {
+      throw new Error('Email already registered')
+    }
 
-  const userId = generateUUID()
-  const newUser = {
-    id: userId,
-    email: normalizedEmail,
-    name: name || null,
-    image: null,
-    emailVerified: false,
-  }
+    const passwordHash = await hashPassword(password)
+    const userId = crypto.randomUUID()
 
-  await db.insert(user).values(newUser)
+    await client.query(
+      `INSERT INTO neon_auth."user" (id, email, name, "emailVerified", "createdAt", "updatedAt") 
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      [userId, email.toLowerCase(), name || null, false]
+    )
 
-  await db.insert(account).values({
-    id: generateUUID(),
-    userId: userId,
-    type: 'email',
-    provider: 'credential',
-    providerAccountId: normalizedEmail,
-    password: passwordHash,
-  })
+    await client.query(
+      `INSERT INTO neon_auth.account (id, "userId", "providerId", "accountId", password, "createdAt", "updatedAt") 
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+      [crypto.randomUUID(), userId, 'credential', email.toLowerCase(), passwordHash]
+    )
 
-  return {
-    id: newUser.id,
-    email: newUser.email,
-    name: newUser.name,
-    image: newUser.image,
-    emailVerified: newUser.emailVerified,
+    return {
+      id: userId,
+      email: email.toLowerCase(),
+      name: name || null,
+      image: null,
+      emailVerified: false,
+    }
+  } finally {
+    client.release()
   }
 }
 
 export async function signInUser(email: string, password: string): Promise<Session> {
-  const foundUser = await db
-    .select()
-    .from(user)
-    .where(eq(user.email, email.toLowerCase()))
-    .limit(1)
+  const client = await pool.connect()
+  try {
+    const userResult = await client.query(
+      'SELECT id, email, name, image, "emailVerified" FROM neon_auth."user" WHERE email = $1',
+      [email.toLowerCase()]
+    )
 
-  if (foundUser.length === 0) {
-    throw new Error('Invalid email or password')
-  }
+    if (userResult.rows.length === 0) {
+      throw new Error('Invalid email or password')
+    }
 
-  const foundAccount = await db
-    .select()
-    .from(account)
-    .where(eq(account.userId, foundUser[0].id))
-    .limit(1)
+    const user = userResult.rows[0]
 
-  if (foundAccount.length === 0 || !foundAccount[0].password) {
-    throw new Error('Invalid email or password')
-  }
+    const accountResult = await client.query(
+      'SELECT password FROM neon_auth.account WHERE "userId" = $1 AND "providerId" = $2',
+      [user.id, 'credential']
+    )
 
-  const isPasswordValid = await verifyPassword(password, foundAccount[0].password)
-  if (!isPasswordValid) {
-    throw new Error('Invalid email or password')
-  }
+    if (accountResult.rows.length === 0 || !accountResult.rows[0].password) {
+      throw new Error('Invalid email or password')
+    }
 
-  const sessionToken = generateToken()
-  const expiresAt = Date.now() + SESSION_DURATION
+    const isPasswordValid = await verifyPassword(password, accountResult.rows[0].password)
+    if (!isPasswordValid) {
+      throw new Error('Invalid email or password')
+    }
 
-  const cookieStore = await cookies()
-  cookieStore.set('session-token', sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: SESSION_DURATION / 1000,
-    path: '/',
-  })
+    const expiresAt = Date.now() + SESSION_DURATION
+    const userData = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      image: user.image,
+      emailVerified: user.emailVerified,
+    }
 
-  return {
-    user: {
-      id: foundUser[0].id,
-      email: foundUser[0].email,
-      name: foundUser[0].name,
-      image: foundUser[0].image,
-      emailVerified: foundUser[0].emailVerified,
-    },
-    expiresAt,
+    const cookieStore = await cookies()
+    
+    // Store user data in cookie
+    cookieStore.set('user-session', JSON.stringify(userData), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: SESSION_DURATION / 1000,
+      path: '/',
+    })
+
+    return {
+      user: userData,
+      expiresAt,
+    }
+  } finally {
+    client.release()
   }
 }
 
 export async function getSession(): Promise<Session | null> {
   const cookieStore = await cookies()
-  const token = cookieStore.get('session-token')?.value
+  const userSessionCookie = cookieStore.get('user-session')?.value
 
-  if (!token) {
+  if (!userSessionCookie) {
     return null
   }
 
-  // In production, you'd validate the token against a session table
-  // For now, we'll return the user from the token
-  return null
+  try {
+    const user = JSON.parse(userSessionCookie)
+    return {
+      user,
+      expiresAt: Date.now() + SESSION_DURATION,
+    }
+  } catch (e) {
+    return null
+  }
 }
 
 export async function signOutUser(): Promise<void> {
   const cookieStore = await cookies()
-  cookieStore.delete('session-token')
+  cookieStore.delete('user-session')
 }

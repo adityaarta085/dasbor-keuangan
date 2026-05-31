@@ -11,9 +11,9 @@ export async function POST(req: Request) {
       )
     }
 
-    await signInUser(email, password)
+    const session = await signInUser(email, password)
     
-    return Response.json({ message: 'Signed in successfully' })
+    return Response.json(session.user)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An error occurred'
     return Response.json(
